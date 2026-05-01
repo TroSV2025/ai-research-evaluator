@@ -41,4 +41,4 @@ def evaluate():
         return jsonify({"result": result})
 
     except Exception as e:
-        return jsonify({"error": str(e)}))
+        return jsonify({"error": str(e)})
