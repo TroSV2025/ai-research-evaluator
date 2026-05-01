@@ -3,9 +3,9 @@ import React, { useState } from "react";
 const API = "https://ai-research-evaluator.onrender.com";
 
 const MODULES = [
-  { key: "research", name: "Đề tài nghiên cứu" },
-  { key: "initiative", name: "Sáng kiến kinh nghiệm" },
-  { key: "journal", name: "Bài báo tạp chí" }
+  { key: "research", name: "📘 Đề tài nghiên cứu khoa học" },
+  { key: "initiative", name: "📗 Sáng kiến kinh nghiệm" },
+  { key: "journal", name: "📄 Bài báo tạp chí" }
 ];
 
 export default function App() {
@@ -25,6 +25,7 @@ export default function App() {
   };
 
   // ================= API =================
+
   const uploadCriteria = async (tab) => {
     const s = state[tab];
     if (!s.criteriaFile) return alert("Chọn file tiêu chí");
@@ -37,7 +38,7 @@ export default function App() {
       body: fd
     });
 
-    alert("Đã lưu tiêu chí");
+    alert("✅ Đã lưu tiêu chí");
   };
 
   const evaluate = async (tab) => {
@@ -56,11 +57,16 @@ export default function App() {
 
     const data = await res.json();
 
+    let raw = data.result || "";
+
+    // 🔥 loại bỏ ```json
+    raw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+
     let parsed;
     try {
-      parsed = JSON.parse(data.result);
+      parsed = JSON.parse(raw);
     } catch {
-      parsed = { conclusion: data.result };
+      parsed = { conclusion: raw };
     }
 
     update(tab, { result: parsed, loading: false });
@@ -70,8 +76,8 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "Arial" }}>
-      
-      {/* ================= SIDEBAR ================= */}
+
+      {/* SIDEBAR */}
       <div style={sidebar}>
         <h2>🎓 AI Evaluator</h2>
 
@@ -90,9 +96,9 @@ export default function App() {
         ))}
       </div>
 
-      {/* ================= MAIN ================= */}
+      {/* MAIN */}
       <div style={main}>
-        
+
         <h1>{MODULES.find(m => m.key === active).name}</h1>
 
         {/* Upload tiêu chí */}
@@ -107,43 +113,81 @@ export default function App() {
           <h3>📄 Tài liệu cần đánh giá</h3>
           <input type="file" onChange={(e) => update(active, { file: e.target.files[0] })}/>
           <button style={btnPrimary} onClick={() => evaluate(active)}>
-            {s.loading ? "⏳ Đang xử lý..." : "🚀 Chấm bài"}
+            {s.loading ? "⏳ Đang chấm..." : "🚀 Chấm bài"}
           </button>
         </div>
 
-        {/* RESULT */}
+        {/* REPORT */}
         {s.result && (
-          <div style={resultCard}>
-            <h2>📊 Kết quả đánh giá</h2>
+          <div style={report}>
 
-            <div style={scoreBox}>
-              {s.result.score !== undefined ? s.result.score : "--"}
+            {/* HEADER */}
+            <div style={header}>
+              <h2>TRƯỜNG ĐẠI HỌC</h2>
+              <h3>PHIẾU ĐÁNH GIÁ</h3>
+              <hr/>
             </div>
 
-            {s.result.details?.length > 0 && (
+            {/* INFO */}
+            <div style={section}>
+              <p><b>Loại:</b> {MODULES.find(m => m.key === active).name}</p>
+              <p><b>Ngày:</b> {new Date().toLocaleDateString()}</p>
+            </div>
+
+            {/* TABLE */}
+            <div style={section}>
+              <h3>I. Bảng chấm điểm</h3>
               <table style={table}>
                 <thead>
                   <tr>
+                    <th>STT</th>
                     <th>Tiêu chí</th>
-                    <th>Điểm</th>
-                    <th>Nhận xét</th>
+                    <th>Max</th>
+                    <th>Đạt</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {s.result.details.map((d, i) => (
+                  {s.result.details?.map((d, i) => (
                     <tr key={i}>
+                      <td>{i + 1}</td>
                       <td>{d.name}</td>
-                      <td>{d.score}/{d.max}</td>
-                      <td>{d.comment}</td>
+                      <td>{d.max}</td>
+                      <td>{d.score}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            )}
-
-            <div style={conclusion}>
-              {s.result.conclusion}
             </div>
+
+            {/* COMMENTS */}
+            <div style={section}>
+              <h3>II. Nhận xét</h3>
+              {s.result.details?.map((d, i) => (
+                <div key={i} style={commentBox}>
+                  <b>{i + 1}. {d.name}</b>
+                  <p style={{ whiteSpace: "pre-wrap" }}>{d.comment}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* CONCLUSION */}
+            <div style={section}>
+              <h3>III. Kết luận</h3>
+              <div style={conclusion}>
+                {s.result.conclusion}
+              </div>
+            </div>
+
+            {/* SCORE */}
+            <div style={totalScore}>
+              Tổng điểm: {s.result.score}/100
+            </div>
+
+            {/* PRINT */}
+            <button onClick={() => window.print()} style={printBtn}>
+              📄 In / Xuất PDF
+            </button>
+
           </div>
         )}
       </div>
@@ -154,7 +198,7 @@ export default function App() {
 // ================= STYLE =================
 
 const sidebar = {
-  width: 250,
+  width: 260,
   background: "#f4f6f9",
   padding: 20,
   borderRight: "1px solid #ddd"
@@ -181,13 +225,6 @@ const card = {
   boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
 };
 
-const resultCard = {
-  background: "#ffffff",
-  padding: 25,
-  borderRadius: 10,
-  boxShadow: "0 2px 10px rgba(0,0,0,0.15)"
-};
-
 const btn = {
   marginTop: 10,
   padding: "8px 15px"
@@ -203,21 +240,52 @@ const btnPrimary = {
   cursor: "pointer"
 };
 
-const scoreBox = {
-  fontSize: 40,
-  fontWeight: "bold",
-  color: "#007bff",
-  marginBottom: 20
+const report = {
+  background: "#fff",
+  padding: 30,
+  border: "1px solid #000"
+};
+
+const header = {
+  textAlign: "center"
+};
+
+const section = {
+  marginTop: 20
 };
 
 const table = {
   width: "100%",
-  borderCollapse: "collapse",
-  marginBottom: 20
+  borderCollapse: "collapse"
+};
+
+const commentBox = {
+  border: "1px solid #ccc",
+  padding: 10,
+  marginTop: 10,
+  background: "#fafafa"
 };
 
 const conclusion = {
-  background: "#eef6ff",
+  border: "1px solid #007bff",
   padding: 15,
-  borderRadius: 6
+  background: "#eef6ff"
+};
+
+const totalScore = {
+  marginTop: 30,
+  fontSize: 24,
+  fontWeight: "bold",
+  textAlign: "right",
+  color: "#d9534f"
+};
+
+const printBtn = {
+  marginTop: 20,
+  padding: 10,
+  background: "#28a745",
+  color: "#fff",
+  border: "none",
+  borderRadius: 5,
+  cursor: "pointer"
 };
