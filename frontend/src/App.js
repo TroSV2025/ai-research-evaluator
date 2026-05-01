@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const API = "http://localhost:5000";
+const API = "https://ai-research-evaluator.onrender.com/";
 
 export default function App() {
   const [file, setFile] = useState(null);
