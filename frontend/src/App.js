@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const API = "https://ai-research-evaluator.onrender.com"; // 🔴 sửa lại link backend của bạn
+const API = "https://ai-research-evaluator.onrender.com";
 
 export default function App() {
   const [criteriaFile, setCriteriaFile] = useState(null);
@@ -19,13 +19,17 @@ export default function App() {
     fd.append("file", criteriaFile);
 
     try {
-      await fetch(`${API}/upload-criteria`, {
+      const res = await fetch(`${API}/upload-criteria`, {
         method: "POST",
         body: fd
       });
 
+      const data = await res.json();
+      console.log("UPLOAD:", data);
+
       alert("✅ Upload tiêu chí thành công");
     } catch (err) {
+      console.error(err);
       alert("❌ Lỗi upload tiêu chí");
     }
   };
@@ -41,6 +45,7 @@ export default function App() {
     fd.append("file", file);
 
     setLoading(true);
+    setResult(null); // reset trước khi gọi
 
     try {
       const res = await fetch(`${API}/evaluate`, {
@@ -49,16 +54,36 @@ export default function App() {
       });
 
       const data = await res.json();
+      console.log("RESPONSE:", data);
+
+      // 👉 nếu backend trả lỗi
+      if (data.error) {
+        setResult({
+          score: 0,
+          details: [],
+          conclusion: data.error
+        });
+        setLoading(false);
+        return;
+      }
 
       let parsed;
+
       try {
         parsed = JSON.parse(data.result);
-      } catch {
-        parsed = { raw: data.result };
+      } catch (e) {
+        console.log("RAW RESULT:", data.result);
+        parsed = {
+          score: 0,
+          details: [],
+          conclusion: data.result
+        };
       }
 
       setResult(parsed);
+
     } catch (err) {
+      console.error(err);
       alert("❌ Lỗi gọi AI");
     }
 
@@ -69,7 +94,7 @@ export default function App() {
     <div style={{ maxWidth: 900, margin: "auto", padding: 20 }}>
       <h1>🎓 AI Research Evaluator</h1>
 
-      {/* ================= ADMIN ================= */}
+      {/* ADMIN */}
       <div style={{ border: "1px solid #ccc", padding: 15, marginBottom: 20 }}>
         <h3>👨‍💼 Admin - Upload tiêu chí</h3>
 
@@ -85,7 +110,7 @@ export default function App() {
         </button>
       </div>
 
-      {/* ================= USER ================= */}
+      {/* USER */}
       <div style={{ border: "1px solid #ccc", padding: 15 }}>
         <h3>👨‍🎓 Người dùng - Đánh giá tài liệu</h3>
 
@@ -101,17 +126,17 @@ export default function App() {
         </button>
       </div>
 
-      {/* ================= RESULT ================= */}
+      {/* RESULT */}
       {result && (
         <div style={{ marginTop: 30 }}>
           <h2>📊 Kết quả</h2>
 
-          {result.score && (
+          {/* FIX LỖI QUAN TRỌNG: dùng !== undefined */}
+          {result.score !== undefined && (
             <h3>Điểm tổng: {result.score}/100</h3>
           )}
 
-          {/* bảng chi tiết */}
-          {result.details && (
+          {result.details && result.details.length > 0 && (
             <table border="1" cellPadding="8" style={{ width: "100%" }}>
               <thead>
                 <tr>
@@ -132,18 +157,10 @@ export default function App() {
             </table>
           )}
 
-          {/* kết luận */}
           {result.conclusion && (
             <h3 style={{ marginTop: 20 }}>
               🔎 Kết luận: {result.conclusion}
             </h3>
-          )}
-
-          {/* fallback nếu AI trả text */}
-          {result.raw && (
-            <pre style={{ whiteSpace: "pre-wrap" }}>
-              {result.raw}
-            </pre>
           )}
         </div>
       )}
