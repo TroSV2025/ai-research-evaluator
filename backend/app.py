@@ -26,17 +26,19 @@ def upload_criteria():
 
 @app.route("/evaluate", methods=["POST"])
 def evaluate():
-    f = request.files["file"]
-    path = os.path.join(UPLOAD, f.filename)
-    f.save(path)
+    try:
+        file = request.files["file"]
+        path = os.path.join("uploads", file.filename)
+        file.save(path)
 
-    text = read_file(path)
+        text = read_file(path)
 
-    with open(CRITERIA_FILE, encoding="utf-8") as fp:
-        criteria = json.load(fp)["criteria"]
+        with open("criteria.json", encoding="utf-8") as f:
+            criteria = json.load(f)["criteria"]
 
-    result = evaluate_text(text, criteria)
-    return jsonify({"result": result})
+        result = evaluate_text(text, criteria)
 
-if __name__ == "__main__":
-    app.run()
+        return jsonify({"result": result})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}))
