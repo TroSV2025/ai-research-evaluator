@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const API = "https://your-backend.onrender.com"; // 🔴 sửa lại link backend của bạn
+const API = "https://ai-research-evaluator.onrender.com/"; // 🔴 sửa lại link backend của bạn
 
 export default function App() {
   const [criteriaFile, setCriteriaFile] = useState(null);
