@@ -1,22 +1,35 @@
 import os
 from openai import OpenAI
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI()  # dùng env tự động
 
 def evaluate_text(text, criteria):
     prompt = f"""
-Đánh giá bài viết theo tiêu chí:
+Bạn là chuyên gia đánh giá bài nghiên cứu.
+
+Hãy đánh giá theo tiêu chí:
 {criteria}
 
 Bài viết:
-{text[:8000]}
+{text[:5000]}
 
-Trả về JSON gồm score, details, conclusion
+Trả về JSON hợp lệ dạng:
+
+{{
+ "score": 0-100,
+ "details": [
+   {{"name": "Tiêu chí", "score": x, "max": y, "comment": "..."}}
+ ],
+ "conclusion": "..."
+}}
+
+KHÔNG thêm bất kỳ chữ nào ngoài JSON.
 """
 
-    res = client.chat.completions.create(
+    response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2
     )
-    return res.choices[0].message.content
+
+    return response.choices[0].message.content
